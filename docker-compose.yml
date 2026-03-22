@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  jupyter:                      # Name of this service (can be anything)
+    build:
+      context: .                # Build from the current directory
+      dockerfile: Dockerfile    # Use our Dockerfile
+    platform: linux/amd64       # Force x86_64 Linux emulation (matches the Dockerfile)
+    ports:
+      - "8888:8888"             # "HOST_PORT:CONTAINER_PORT"
+                                # Forwards container port 8888 to your Mac's port 8888
+                                # This is why http://localhost:8888 works in your browser
+    volumes:
+      - .:/app                  # Live-sync: your project folder on Mac ↔ /app in container
+                                # Edits in Jupyter save directly to your Mac's files
+                                # Files are safe when the container stops
+    environment:
+      - PYTHONUNBUFFERED=1      # Pass this env var into the container

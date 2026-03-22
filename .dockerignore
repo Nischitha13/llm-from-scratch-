@@ -1,0 +1,17 @@
+# Local virtual environment — contains Mac-compiled packages, not needed in the container
+# The container installs its own packages from requirements.txt
+jax_env/
+
+# Jupyter checkpoint files — auto-generated, not needed in the image
+.ipynb_checkpoints/
+
+# Python bytecode cache — regenerated automatically, no need to copy in
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS metadata files
+.DS_Store
+
+# Claude Code settings — not needed in the container
+.claude/

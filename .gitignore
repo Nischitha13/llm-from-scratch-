@@ -1,0 +1,22 @@
+# Model checkpoint (143 MB — too large for GitHub)
+Train/small_checkpoint.orbax/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter auto-saves
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# macOS system files
+.DS_Store
+**/.DS_Store
+
+# Claude Code settings (private)
+.claude/
+
+# Gradio SSL certificate (auto-generated)
+Final/.gradio/
