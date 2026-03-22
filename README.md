@@ -1,5 +1,10 @@
 # MiniGPT — Building and Training an LLM from Scratch
 
+![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)
+![JAX](https://img.shields.io/badge/JAX-0.6.2-orange?logo=google&logoColor=white)
+![Flax](https://img.shields.io/badge/Flax_NNX-0.10.7-blueviolet)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+
 A 20-million-parameter GPT-style language model built entirely from scratch using JAX and Flax, trained on the TinyStories dataset to generate short children's stories.
 
 > **Sample output:**
@@ -206,6 +211,41 @@ docker cp ~/Downloads/small_checkpoint.orbax <container_id>:/app/small_checkpoin
 The image below shows loss from a full training run on 2,000,000 stories:
 
 ![Training Loss](training_loss.png)
+
+---
+
+## Results
+
+| Metric | Value |
+|---|---|
+| Initial training loss | ~10.92 |
+| Random baseline loss | 10.82 (= log(50,257)) |
+| Training data | 1,000 stories × 20 epochs |
+| Training time | ~5 min on Google Colab T4 GPU |
+
+A randomly initialized model on a 50,257-token vocabulary produces loss ≈ log(50,257) = **10.82** — equivalent to guessing uniformly at random. The model quickly learns to beat random and generates coherent story continuations.
+
+**Generated sample:**
+```
+Prompt : "Once upon a time a big bear"
+Output : "Once upon a time a big bear. All a little boy was three years
+          old. He was very happy and wanted to play with his friends..."
+```
+
+![Training Loss](training_loss.png)
+
+---
+
+## Key Engineering Decisions
+
+**1. Causal (not bidirectional) attention mask**
+Each token is only allowed to attend to itself and tokens that came before it — never future tokens. This is enforced by a lower-triangular mask applied before softmax. Without it, the model could "cheat" during training by reading the answer it's supposed to predict, and would fail completely at inference time when future tokens don't exist.
+
+**2. Right-padding to match training and inference**
+Sequences shorter than `maxlen=128` are padded with zeros on the right (not the left). Padding on the left would shift all positional embeddings, making position 0 mean something different at training vs inference time. Right-padding keeps the real tokens at their correct positions in both cases.
+
+**3. JAX + Flax NNX over PyTorch**
+JAX compiles the entire training step (`@nnx.jit`) to XLA, which fuses operations and eliminates Python overhead — critical for GPU utilization. The functional, stateless design also makes it straightforward to reason about what the model is doing at each step, which was the goal of building from scratch.
 
 ---
 
