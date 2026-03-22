@@ -5,7 +5,7 @@
 ![Flax](https://img.shields.io/badge/Flax_NNX-0.10.7-blueviolet)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 
-A 20-million-parameter GPT-style language model built entirely from scratch using JAX and Flax, trained on the TinyStories dataset to generate short children's stories.
+A personal learning project to understand the internal architecture of large language models by building one from scratch. This is not intended for production use — the goal was to deeply understand every component: tokenization, embeddings, multi-head attention, causal masking, the training loop, and autoregressive inference, by implementing each piece manually using JAX and Flax.
 
 > **Sample output:**
 > Prompt: `"Once upon a time a big bear"`
