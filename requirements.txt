@@ -1,0 +1,12 @@
+jax==0.6.2
+jaxlib==0.6.2
+flax==0.10.7
+grain==0.2.13
+array-record<0.6.0
+tiktoken==0.4.0
+gradio==6.5.1
+orbax-checkpoint
+ipywidgets==8.1.8
+typing-extensions==4.15.0
+jupyter==1.1.1
+matplotlib==3.10.8

@@ -42,31 +42,20 @@ Input text  →  Tokenizer (GPT-2 BPE, vocab=50,257)
 
 ```
 .
-├── Dockerfile                  # Docker image definition
-├── docker-compose.yml          # Run Jupyter with one command
-├── requirements.txt            # All Python dependencies
+├── Dockerfile                          # Docker image definition
+├── docker-compose.yml                  # Run Jupyter with one command
+├── requirements.txt                    # All Python dependencies
+├── helper.py                           # Model, data loading, and generation code
+├── TinyStories-1000.txt                # Sample dataset (1000 stories)
+├── training_loss.png                   # Loss curve from full training run
 │
-├── load/                       # Stage 1 — Data exploration
-│   ├── data_loading.ipynb      # Load and explore TinyStories
-│   ├── helper.py               # Data loading utilities
-│   └── TinyStories-1000.txt    # Sample dataset (1000 stories)
-│
-├── build/                      # Stage 2 — Model architecture
-│   ├── Building_and_training_LLM.ipynb   # Build the model step by step
-│   └── helper.py               # Model class definitions
-│
-├── Train/                      # Stage 3 — Training
-│   ├── train.ipynb             # Training loop, optimizer, loss
-│   ├── helper.py               # Training utilities
-│   ├── TinyStories-1000.txt    # Training data
-│   └── training_loss.png       # Loss curve from full training run
-│
-└── Final/                      # Stage 4 — Inference
-    ├── final.ipynb             # Load checkpoint, run Gradio demo
-    └── helper.py               # Generation utilities (temperature, argmax)
+├── data_loading.ipynb                  # Stage 1 — Load and explore the data
+├── Building_and_training_LLM.ipynb     # Stage 2 — Build the model architecture
+├── train.ipynb                         # Stage 3 — Train the model
+└── final.ipynb                         # Stage 4 — Load checkpoint, run Gradio demo
 ```
 
-**Run the notebooks in order:** `load` → `build` → `Train` → `Final`
+**Run the notebooks in order:** `data_loading` → `Building_and_training_LLM` → `train` → `final`
 
 ---
 
@@ -108,8 +97,8 @@ Training on CPU is extremely slow (~7 hours for 1000 stories). Use Google Colab'
 `Runtime → Change runtime type → T4 GPU → Save`
 
 **3. Upload these two files** using the folder icon in the left sidebar:
-- `Train/helper.py`
-- `Train/TinyStories-1000.txt`
+- `helper.py`
+- `TinyStories-1000.txt`
 
 **4. Install dependencies:**
 ```python
@@ -205,10 +194,10 @@ files.download("/content/checkpoint.zip")
 # On your local Mac terminal:
 unzip ~/Downloads/checkpoint.zip -d ~/Downloads/small_checkpoint.orbax
 docker ps   # get container ID
-docker cp ~/Downloads/small_checkpoint.orbax <container_id>:/app/Train/small_checkpoint.orbax
+docker cp ~/Downloads/small_checkpoint.orbax <container_id>:/app/small_checkpoint.orbax
 ```
 
-**8. Run `Final/final.ipynb`** — the Gradio interface will launch at `http://localhost:7860`
+**8. Run `final.ipynb`** — the Gradio interface will launch at `http://localhost:7860`
 
 ---
 
@@ -216,7 +205,7 @@ docker cp ~/Downloads/small_checkpoint.orbax <container_id>:/app/Train/small_che
 
 The image below shows loss from a full training run on 2,000,000 stories:
 
-![Training Loss](Train/training_loss.png)
+![Training Loss](training_loss.png)
 
 ---
 
