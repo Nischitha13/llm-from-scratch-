@@ -232,8 +232,6 @@ Output : "Once upon a time a big bear. All a little boy was three years
           old. He was very happy and wanted to play with his friends..."
 ```
 
-![Training Loss](training_loss.png)
-
 ---
 
 ## Key Engineering Decisions
