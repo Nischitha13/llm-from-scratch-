@@ -1,8 +1,6 @@
-import jax
 import jax.numpy as jnp
 import flax.nnx as nnx
 import grain.python as pygrain
-import optax
 import tiktoken
 from pathlib import Path
 
@@ -203,45 +201,10 @@ def load_and_preprocess_data(
         Tuple of (Grain DataLoader, estimated_batches_per_epoch)
     """
 
-    # Load and validate file
-    file_path = file_path
-
     print(f"Loading data from {file_path} (max {max_stories:,} stories)")
 
-    # Read file in chunks to avoid loading entire file into memory
-    stories = []
-    current_story = []
+    stories = load_stories_from_file(file_path, max_stories=max_stories)
 
-    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-        for line in f:
-            if '<|endoftext|>' in line:
-                # Split on end token and process parts
-                parts = line.split('<|endoftext|>')
-                for i, part in enumerate(parts[:-1]):  # All but last part have end tokens
-                    current_story.append(part)
-                    story_text = ''.join(current_story).strip()
-                    if story_text:
-                        stories.append(story_text + '<|endoftext|>')
-                        if len(stories) >= max_stories:
-                            break
-                    current_story = []
-
-                # Last part becomes start of next story
-                if parts[-1].strip():
-                    current_story = [parts[-1]]
-
-                if len(stories) >= max_stories:
-                    break
-            else:
-                current_story.append(line)
-
-        # Don't forget the last story if file doesn't end with end token
-        if current_story and len(stories) < max_stories:
-            story_text = ''.join(current_story).strip()
-            if story_text:
-                stories.append(story_text + '<|endoftext|>')
-
-    print(f"Loaded {len(stories):,} stories")
     if len(stories) == 0:
         raise ValueError("No valid stories found in the dataset")
 

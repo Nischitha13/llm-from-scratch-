@@ -5,13 +5,48 @@
 ![Flax](https://img.shields.io/badge/Flax_NNX-0.10.7-blueviolet)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 
-A personal learning project to understand the internal architecture of large language models by building one from scratch. This is not intended for production use — the goal was to deeply understand every component: tokenization, embeddings, multi-head attention, causal masking, the training loop, and autoregressive inference, by implementing each piece manually using JAX and Flax.
+## What this project is
+
+This is a personal learning project built to understand how large language
+models actually work under the hood, by building a small one from the
+ground up instead of just using an existing library. It is **not** meant for
+production use — the point was to hand-implement every core piece of a
+GPT-style model (tokenization, embeddings, multi-head attention, causal
+masking, the training loop, and text generation) so that each step is fully
+understood rather than hidden behind a framework.
+
+The result, "MiniGPT," is a ~20-million-parameter transformer trained on the
+[TinyStories](https://arxiv.org/abs/2305.07759) dataset — a collection of
+very simple, short children's stories designed specifically for training
+tiny language models that can still produce coherent text.
 
 > **Sample output:**
 > Prompt: `"Once upon a time a big bear"`
 > Output: `"Once upon a time a big bear. All a little boy was three years old. He was very happy and wanted to play with his friends. He was very happy and he saw a big..."`
 
 ---
+
+## How it works, in plain English
+
+1. **Tokenizer** — Raw text is split into sub-word tokens using GPT-2's BPE
+   tokenizer (the same one OpenAI uses), giving a vocabulary of 50,257
+   possible tokens.
+2. **Embeddings** — Each token is converted into a 192-dimensional vector,
+   and a second embedding encodes *where* in the sequence that token sits
+   (its position), since the model has no built-in sense of order.
+3. **Transformer blocks** — The embedded sequence passes through 6 stacked
+   blocks. Each block uses multi-head self-attention so every token can
+   "look at" other tokens and decide how relevant they are, then adds the
+   result back to its input via a residual connection (which helps
+   gradients flow during training).
+4. **Causal mask** — Attention is restricted so a token can only look at
+   itself and earlier tokens, never ones that come after it. This is what
+   makes the model capable of *predicting the next word* instead of
+   cheating by peeking at the answer.
+5. **Output layer** — The final representation is projected back to a
+   50,257-way probability distribution over the vocabulary, and the model
+   picks (or samples) the next token from that distribution — repeating
+   this one token at a time produces the generated text.
 
 ## Model Architecture
 
@@ -60,16 +95,20 @@ Input text  →  Tokenizer (GPT-2 BPE, vocab=50,257)
 └── final.ipynb                         # Stage 4 — Load checkpoint, run Gradio demo
 ```
 
-**Run the notebooks in order:** `data_loading` → `Building_and_training_LLM` → `train` → `final`
+Each notebook builds on the previous one, so they are meant to be run in
+order: `data_loading` → `Building_and_training_LLM` → `train` → `final`.
 
 ---
 
-## Run Locally with Docker
+## Running it yourself
 
-### Prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+You have two options: run everything locally in Docker (easiest way to get
+a working environment), or train on Google Colab's free GPU (much faster
+than training on a CPU). Both are covered below.
 
-### Steps
+### Option 1 — Run Locally with Docker
+
+**Prerequisites:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
 
 ```bash
 # 1. Clone the repository
@@ -79,38 +118,37 @@ cd building-and-training-llm
 # 2. Start Jupyter (builds the Docker image on first run)
 docker-compose up
 
-# 3. Open your browser
-# Go to: http://localhost:8888
+# 3. Open your browser at:
+# http://localhost:8888
 ```
 
-Open the notebooks in order and run all cells.
+Then open the notebooks in order and run all cells.
 
-> **Note:** The trained model checkpoint is not included in this repo (143 MB — too large for GitHub).
-> You need to train your own model. See the [Training on Google Colab](#training-on-google-colab-recommended) section below.
+> **Note:** The trained model checkpoint isn't included in this repo (it's
+> 143 MB, too large for GitHub). You'll need to train your own — see the
+> Colab section below — before `final.ipynb` will have a model to load.
 
----
+### Option 2 — Training on Google Colab (Recommended)
 
-## Training on Google Colab (Recommended)
+Training on a CPU is very slow (roughly 7 hours for just 1,000 stories).
+Colab's free T4 GPU does the same job in about 5 minutes, so it's the
+recommended path for actually training a model.
 
-Training on CPU is extremely slow (~7 hours for 1000 stories). Use Google Colab's free T4 GPU instead (~5 minutes).
+**1. Open Colab:** [colab.research.google.com](https://colab.research.google.com)
 
-### Steps
-
-**1. Open Google Colab:** [colab.research.google.com](https://colab.research.google.com)
-
-**2. Set runtime to GPU:**
+**2. Switch to a GPU runtime:**
 `Runtime → Change runtime type → T4 GPU → Save`
 
-**3. Upload these two files** using the folder icon in the left sidebar:
+**3. Upload two files** using the folder icon in the left sidebar:
 - `helper.py`
 - `TinyStories-1000.txt`
 
-**4. Install dependencies:**
+**4. Install the dependencies used for training:**
 ```python
 !pip install flax optax grain tiktoken orbax-checkpoint -q
 ```
 
-**5. Run training:**
+**5. Run the training loop:**
 ```python
 import os
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
@@ -194,21 +232,24 @@ shutil.make_archive("/content/checkpoint", "zip", "/content/small_checkpoint.orb
 files.download("/content/checkpoint.zip")
 ```
 
-**7. Copy the checkpoint into Docker:**
+**7. Move the checkpoint into your Docker container:**
 ```bash
-# On your local Mac terminal:
+# On your local machine terminal:
 unzip ~/Downloads/checkpoint.zip -d ~/Downloads/small_checkpoint.orbax
 docker ps   # get container ID
 docker cp ~/Downloads/small_checkpoint.orbax <container_id>:/app/small_checkpoint.orbax
 ```
 
-**8. Run `final.ipynb`** — the Gradio interface will launch at `http://localhost:7860`
+**8. Run `final.ipynb`** — this loads the checkpoint and launches a Gradio
+demo at `http://localhost:7860` where you can type a prompt and see the
+model generate a story.
 
 ---
 
 ## Training Loss
 
-The image below shows loss from a full training run on 2,000,000 stories:
+The chart below shows the loss curve from a full training run on 2,000,000
+stories — a much larger run than the 1,000-story quick example above.
 
 ![Training Loss](training_loss.png)
 
@@ -223,7 +264,13 @@ The image below shows loss from a full training run on 2,000,000 stories:
 | Training data | 1,000 stories × 20 epochs |
 | Training time | ~5 min on Google Colab T4 GPU |
 
-A randomly initialized model on a 50,257-token vocabulary produces loss ≈ log(50,257) = **10.82** — equivalent to guessing uniformly at random. The model quickly learns to beat random and generates coherent story continuations.
+Why compare against 10.82? A freshly initialized model that hasn't learned
+anything yet should be no better than guessing uniformly at random across
+all 50,257 possible tokens, and the loss for pure random guessing works out
+to `log(50,257) ≈ 10.82`. The fact that the model starts right around that
+number and then drops as training proceeds confirms it's actually learning
+to predict text rather than something being broken. After training, it
+reliably produces coherent story continuations.
 
 **Generated sample:**
 ```
@@ -237,13 +284,29 @@ Output : "Once upon a time a big bear. All a little boy was three years
 ## Key Engineering Decisions
 
 **1. Causal (not bidirectional) attention mask**
-Each token is only allowed to attend to itself and tokens that came before it — never future tokens. This is enforced by a lower-triangular mask applied before softmax. Without it, the model could "cheat" during training by reading the answer it's supposed to predict, and would fail completely at inference time when future tokens don't exist.
+Each token is only allowed to attend to itself and the tokens that came
+before it — never future tokens. This is enforced with a lower-triangular
+mask applied before the softmax. Without it, the model could "cheat" during
+training by looking directly at the token it's supposed to predict, and it
+would then fail completely at inference time, when future tokens don't
+exist yet to peek at.
 
-**2. Right-padding to match training and inference**
-Sequences shorter than `maxlen=128` are padded with zeros on the right (not the left). Padding on the left would shift all positional embeddings, making position 0 mean something different at training vs inference time. Right-padding keeps the real tokens at their correct positions in both cases.
+**2. Right-padding to keep training and inference consistent**
+Sequences shorter than `maxlen=128` are padded with zeros on the right, not
+the left. Padding on the left would shift every real token into different
+position indices depending on how much padding was added, so position 0
+would mean something different from one example to the next. Padding on
+the right keeps every real token pinned to its true position, so the
+positional embeddings mean the same thing during training and at
+inference.
 
-**3. JAX + Flax NNX over PyTorch**
-JAX compiles the entire training step (`@nnx.jit`) to XLA, which fuses operations and eliminates Python overhead — critical for GPU utilization. The functional, stateless design also makes it straightforward to reason about what the model is doing at each step, which was the goal of building from scratch.
+**3. JAX + Flax NNX instead of PyTorch**
+JAX compiles the entire training step (`@nnx.jit`) down to XLA, which fuses
+operations together and removes Python's per-step overhead — this matters
+a lot for keeping the GPU busy. JAX's functional, stateless style also
+makes it easier to trace exactly what happens to the data at each step,
+which lined up well with the goal of understanding the model from first
+principles rather than treating it as a black box.
 
 ---
 
