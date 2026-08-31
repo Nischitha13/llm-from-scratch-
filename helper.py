@@ -5,6 +5,7 @@ import tiktoken
 from pathlib import Path
 
 tokenizer = tiktoken.get_encoding("gpt2")
+END_OF_TEXT_TOKEN = tokenizer.encode('<|endoftext|>', allowed_special={'<|endoftext|>'})[0]
 
 vocab_size = tokenizer.n_vocab
 num_transformer_blocks = 6
@@ -139,7 +140,7 @@ def generate_text(model, start_tokens, max_new_tokens=50, temperature=1.0):
 
         next_token = int(jnp.argmax(next_token_logits))
 
-        if next_token == tokenizer.encode('<|endoftext|>', allowed_special={'<|endoftext|>'})[0]:
+        if next_token == END_OF_TEXT_TOKEN:
             break
 
         tokens.append(next_token)
